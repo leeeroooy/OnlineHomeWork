@@ -1,9 +1,13 @@
-import React, { Component } from 'react';
+import React from 'react';
 import { StyleSheet, TouchableOpacity, Text, View, Button, Alert } from 'react-native';
 import { TextInput } from 'react-native-gesture-handler';
-// import qs from 'quer/ystring';
+import AsyncStorage from '@react-native-community/async-storage';
 
-export default class App extends Component {
+
+const STORAGE_KEY = "save_state";
+const USER_PASSWORD_KEY = "save_password";
+const USER_EMAIL_KEY = "save_useremail";
+export default class App extends React.Component {
 
   constructor(props) {
     super(props);
@@ -11,14 +15,16 @@ export default class App extends Component {
       email: "",
       password: "",
       username: "",
-      changeState: "logins"
+      changeState: "login",
+
     };
     this.handleEmailText = this.handleEmailText.bind(this)
     this.handlePasswordText = this.handlePasswordText.bind(this);
     this.handleUsernameText = this.handleUsernameText.bind(this);
-    this.userRegistration = this.userRegistration.bind(this);
-
+    // this.userRegistration = this.userRegistration.bind(this);
+    // this.getStorageData = this.getStorageData.bind(this);
   }
+  
 
 
 
@@ -132,8 +138,8 @@ export default class App extends Component {
           <TextInput 
               style={styles.userInput}
               defaultValue={this.state.value}
-              onChangeText={this.handleEmailText}
-              placeholder="Email"
+              onChangeText={this.handleUsernameText}
+              placeholder="Имя пользователя"
               placeholderTextColor="gray"/>
         )
     }
@@ -145,7 +151,7 @@ export default class App extends Component {
       case "login":
         return (
           <View style={{alignSelf: 'center'}}>
-            <TouchableOpacity style={styles.loginButton}>
+            <TouchableOpacity style={styles.loginButton} onPress={this.userLogin}>
               <Text style={{fontSize: 20, color: 'white'}}>
                 Войти
               </Text>
@@ -165,7 +171,7 @@ export default class App extends Component {
       default:
         return (
           <View style={{alignSelf: 'center'}}>
-            <TouchableOpacity style={styles.loginButton}>
+            <TouchableOpacity style={styles.loginButton} onPress={this.userLogin}>
               <Text style={{fontSize: 20, color: 'white'}}>
                 Войти
               </Text>
@@ -175,50 +181,54 @@ export default class App extends Component {
     }
   }
 
-  async userLogin() {
-    let data = {
-      'email': this.state.email,
-      'password': this.state.password
-    };
 
-    let dataJson = JSON.stringify(data);
-    console.log(dataJson);
+  userLogin = async () => {
+    const { updateData } = this.props;
+    const { email } = this.state;
+    const { password } = this.state; 
 
     try {
-      await fetch('http://192.168.0.101:80/homework/login/jsonLogin.php', {
+      await fetch('http://192.168.0.111:80/homework/login/jsonLogin.php', {
         method: 'POST',
         credentials: 'same-origin',
         headers: {
           'Accept': 'application/json',
           'Content-Type': 'application/json'
         },
-        body: dataJson
+        body: JSON.stringify({
+          'email': email,
+          'password': password
+        })
       }) 
       .then(function (response) {
           return response.json();
         })
-        .then(function (responseJson) {
-          console.log('response: ', responseJson);
-        }).catch(error => console.error(error + "json"));
+        .then(async function (responseJson) {
+
+          await AsyncStorage.setItem(STORAGE_KEY, "home");
+          await AsyncStorage.setItem(USER_PASSWORD_KEY, password);
+          await AsyncStorage.setItem(USER_EMAIL_KEY, email);
+
+          Alert.alert('', responseJson);
+
+          console.log('response: ', responseJson + ' login');
+          updateData("home");
+
+        }).catch(error => console.error(error));
     } catch (err) {
       console.error(err);
     }
 
-    
-  }
+  };
 
-  async userRegistration() {
+  userRegistration = async () => {
 
-    let data = {
-      'username': this.state.username,
-      'email': this.state.email,
-      'password': this.state.password
-    };
-    let dataJson = JSON.stringify(data);
-    console.log(dataJson);
+    const { username } = this.state;
+    const { email } = this.state;
+    const { password } = this.state; 
 
     try {
-      await fetch('http://192.168.0.101:80/homework/registration/jsonRegistraion.php', {
+      await fetch('http://192.168.0.111:80/homework/registration/jsonRegistraion.php', {
         // mode: 'cors',
         method: 'POST',
         credentials: 'same-origin',
@@ -228,25 +238,29 @@ export default class App extends Component {
         },
         // credentials: 'include',
         // redirect: 'follow',
-        body: dataJson
+        body: JSON.stringify({
+          'username': username,
+          'email': email,
+          'password': password
+        })
       })
       .then(function (response) {
           return response.json();
         })
-        .then(function (responseJson) {
+        .then(async function (responseJson) {
           Alert.alert(responseJson);
-          console.log('response:', responseJson);
-        }).catch(error => console.error(error + " json"));
+          console.log('response:', responseJson + ' register');
+        }).catch(error => console.error(error));
 
     }
     catch (err) {
       console.error(err);
     }
-}
-      
-  
-  
+  }
+
+
   render() {
+    // const { navigate } = this.props.navigation;
     return (
       <View style={styles.container}>
         <View style={(this.state.changeState == "login") ? styles.loginContainer: styles.registerContainer}>
@@ -255,9 +269,9 @@ export default class App extends Component {
           <View style={styles.userContainer}>
             <TextInput
                 style={styles.userInput}
-                placeholder="Имя пользователя"
+                placeholder="Email"
                 defaultValue={this.state.value}
-                onChangeText={this.handleUsernameText}
+                onChangeText={this.handleEmailText}
                 placeholderTextColor="grey"/>
             {this.emailRegister()}
             <TextInput
@@ -273,6 +287,9 @@ export default class App extends Component {
         </View>
       </View>
     );
+    
+  
+    
   }
 }
 
