@@ -14,6 +14,7 @@ export default class App extends React.Component {
     this.state = {
       email: "",
       password: "",
+      newPassword: "",
       username: "",
       changeState: "login",
 
@@ -21,6 +22,7 @@ export default class App extends React.Component {
     this.handleEmailText = this.handleEmailText.bind(this)
     this.handlePasswordText = this.handlePasswordText.bind(this);
     this.handleUsernameText = this.handleUsernameText.bind(this);
+    this.handleNewPasswordText = this.handleNewPasswordText.bind(this);
     // this.userRegistration = this.userRegistration.bind(this);
     // this.getStorageData = this.getStorageData.bind(this);
   }
@@ -40,6 +42,12 @@ export default class App extends React.Component {
     });
   }
 
+  handleNewPasswordText(password) {
+    this.setState({
+      newPassword: password
+    });
+  }
+
   handleUsernameText(username) {
     this.setState({
       username: username
@@ -48,6 +56,10 @@ export default class App extends React.Component {
 
   changeToRegister = () => {
     this.setState({changeState: "register"});
+  }
+
+  changeToForgotPassword = () => {
+    this.setState({changeState: "forgotPass"});
   }
    
   changeToLogin = () => {
@@ -70,6 +82,10 @@ export default class App extends React.Component {
       case "register": 
         return (
           <View style={{height: 25}}/>
+        );
+      case "forgotPass": 
+        return (
+          <View style={{height: 25}} />
         );
       default:
         return (
@@ -94,6 +110,10 @@ export default class App extends React.Component {
       case "register":
         return (
           <Text style={styles.welcome}>Регистрация</Text>
+        );
+      case "forgotPass":
+        return (
+          <Text style={styles.welcomeF}>Смена пароля</Text>
         )
       default: 
         return (
@@ -108,10 +128,20 @@ export default class App extends React.Component {
       case "login":
         return (
           <View style={{alignSelf: 'flex-end'}}>
-            <TouchableOpacity style={styles.forgotPasswordButton}>
+            <TouchableOpacity style={styles.forgotPasswordButton} onPress={this.changeToForgotPassword}>
               <Text style={{fontSize: 13, color: "mediumpurple"}}>
                 Забыли пароль?
               </Text>
+            </TouchableOpacity>
+          </View>
+        )
+      case  "forgotPass":
+        return (
+          <View style={{alignSelf: 'flex-end'}}>
+            <TouchableOpacity style={styles.forgotPasswordButton1} onPress={this.changeToLogin}>
+             <Text style={{fontSize: 13, color: "mediumpurple"}}>
+                Вернуться
+             </Text>
             </TouchableOpacity>
           </View>
         )
@@ -132,6 +162,8 @@ export default class App extends React.Component {
     switch(this.state.changeState)
     {
       case "login":
+        return <View/>
+      case "forgotPass": 
         return <View/>
       case "register":
         return (
@@ -168,6 +200,16 @@ export default class App extends React.Component {
             </TouchableOpacity>
           </View>
         )
+      case "forgotPass": 
+        return (
+          <View style={{alignSelf: 'center'}}>
+            <TouchableOpacity style={styles.loginButton} onPress={this.userChangePassword}>
+              <Text style={{fontSize: 20, color: 'white'}}>
+                Поменять пароль
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )
       default:
         return (
           <View style={{alignSelf: 'center'}}>
@@ -186,6 +228,8 @@ export default class App extends React.Component {
     const { updateData } = this.props;
     const { email } = this.state;
     const { password } = this.state; 
+
+    
 
     try {
       await fetch('http://192.168.0.111:80/homework/login/jsonLogin.php', {
@@ -209,10 +253,17 @@ export default class App extends React.Component {
           await AsyncStorage.setItem(USER_PASSWORD_KEY, password);
           await AsyncStorage.setItem(USER_EMAIL_KEY, email);
 
-          Alert.alert('', responseJson);
+          if(responseJson == "Вы успешно вошли!") {
+            Alert.alert('', responseJson);
 
-          console.log('response: ', responseJson + ' login');
-          updateData("home");
+            console.log('response: ', responseJson + ' login');
+            updateData("home");
+          } else if(responseJson != "Нужно зарегистрироваться!") {
+            Alert.alert('', responseJson);
+
+          } else  {
+            Alert.alert('', responseJson);
+          }
 
         }).catch(error => console.error(error));
     } catch (err) {
@@ -226,6 +277,7 @@ export default class App extends React.Component {
     const { username } = this.state;
     const { email } = this.state;
     const { password } = this.state; 
+
 
     try {
       await fetch('http://192.168.0.111:80/homework/registration/jsonRegistraion.php', {
@@ -247,7 +299,7 @@ export default class App extends React.Component {
       .then(function (response) {
           return response.json();
         })
-        .then(async function (responseJson) {
+        .then(function (responseJson) {
           Alert.alert(responseJson);
           console.log('response:', responseJson + ' register');
         }).catch(error => console.error(error));
@@ -257,16 +309,52 @@ export default class App extends React.Component {
       console.error(err);
     }
   }
+ 
+  userChangePassword = async () => {
+    const { email, password, newPassword } = this.state;
 
+    if(password == newPassword)
+    {
+      try {
+        await fetch('http://192.168.0.111:80/homework/changePassword/jsonChangePassword.php', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            'email': email,
+            'password': password,
+          }),
+        })
+        .then(function (response) {
+          return response.json();
+        })
+        .then((responseJson) => {
+          Alert.alert('', responseJson);
+          console.log(responseJson);
+        })
+      } catch (error) {
+        console.log(error);
+      }
+    }
+    else 
+    {
+      Alert.alert('', "Пароли не совпадают");
+    }
+  }
 
   render() {
     // const { navigate } = this.props.navigation;
     return (
       <View style={styles.container}>
-        <View style={(this.state.changeState == "login") ? styles.loginContainer: styles.registerContainer}>
+        <View style={((this.state.changeState == "login") ? styles.loginContainer: 
+              (this.state.changeState == "register" ? styles.registerContainer: 
+                styles.forgotContainer))}>
             {this.registerButtonState()}
           {this.registerText()}
-          <View style={styles.userContainer}>
+          <View style={(this.state.changeState == "forgotPass") ? styles.userContainerForgot: styles.userContainer}>
             <TextInput
                 style={styles.userInput}
                 placeholder="Email"
@@ -274,13 +362,30 @@ export default class App extends React.Component {
                 onChangeText={this.handleEmailText}
                 placeholderTextColor="grey"/>
             {this.emailRegister()}
-            <TextInput
-              style={styles.userInput}
-              placeholder="Пароль"
-              defaultValue={this.state.value}
-              onChangeText={this.handlePasswordText}
-              placeholderTextColor="grey"/>
+            {(this.state.changeState == "forgotPass") ? 
+                (<View>
+                  <TextInput 
+                    style={styles.userInput}
+                    placeholder="Новый пароль"
+                    defaultValue={this.state.value}
+                    onChangeText={this.handlePasswordText}
+                    placeholderTextColor="grey"/>
+                  <TextInput 
+                    style={styles.userInput}
+                    placeholder="Новый пароль"
+                    defaultValue={this.state.value}
+                    onChangeText={this.handleNewPasswordText}
+                    placeholderTextColor="grey"/>
+                  </View>):
 
+                  
+                (<TextInput
+                  style={styles.userInput}
+                  placeholder="Пароль"
+                  defaultValue={this.state.value}
+                  onChangeText={this.handlePasswordText}
+                  placeholderTextColor="grey"/>)
+            }
           </View>
           {this.changeButtonRegPass()}
           {this.changeButtonRegPassLog()}
@@ -299,6 +404,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  forgotContainer: {
+    backgroundColor: "white",
+    width: 280,
+    height: 370,
+    borderRadius: 20
+  },
+  welcomeF: {
+    fontSize: 37,
+    color: "deepskyblue",
+    textAlign: 'center',
+    padding: 10,
   },
   loginContainer: {
     backgroundColor: "white",
@@ -336,16 +453,26 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 15,
   },
+  userContainerForgot: {
+    width: 280,
+    height: 190,
+    alignItems: 'center',
+    // backgroundColor: "black"
+  },
   userContainer: {
     width: 280,
     height: 130,
     padding: 10,
     alignItems: 'center',
-    // backgroundColor: "grey",
+    // backgroundColor: "black",
   },
   forgotPasswordButton: {
     marginRight: 15,
     marginTop: 5,
+  },
+  forgotPasswordButton1: {
+    marginRight: 15,
+    // marginTop: 5,
   },
   returnForgotPasswordButton: {
     marginRight: 15,

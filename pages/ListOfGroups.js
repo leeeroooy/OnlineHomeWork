@@ -7,7 +7,7 @@ import { TextInput, FlatList } from 'react-native-gesture-handler';
 
 const STORAGE_KEY = "save_state";
 
-const USER_NAME_KEY = "save_username";
+const USER_PASSWORD_KEY = "save_password";
 const USER_EMAIL_KEY = "save_useremail";
 
 const GROUP_NAME_KEY = "save_group";
@@ -169,7 +169,7 @@ export default class ListOfGroups extends Component {
     makeGroup = async () => {
         const { nameOfGroup } = this.state;
 
-        var username = await AsyncStorage.getItem(USER_NAME_KEY);
+        var userpassword = await AsyncStorage.getItem(USER_PASSWORD_KEY);
         var useremail = await AsyncStorage.getItem(USER_EMAIL_KEY);
 
         try {
@@ -182,7 +182,7 @@ export default class ListOfGroups extends Component {
                 },
                 body: JSON.stringify({
                     'nameOfGroup': nameOfGroup,
-                    'username': username,
+                    'userpassword': userpassword,
                     'email': useremail 
                 })
             })
@@ -222,7 +222,7 @@ export default class ListOfGroups extends Component {
     saveName = async (name) =>  {
         const { updateDataLists } = this.props;
         
-        var username = await AsyncStorage.getItem(USER_NAME_KEY);
+        var userpassword= await AsyncStorage.getItem(USER_PASSWORD_KEY);
         var useremail = await AsyncStorage.getItem(USER_EMAIL_KEY);
 
 
@@ -236,7 +236,7 @@ export default class ListOfGroups extends Component {
                 },
                 body: JSON.stringify({
                     'nameOfGroup': name,
-                    'username': username,
+                    'userpassword': userpassword,
                     'useremail': useremail
                 })
             })

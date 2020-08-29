@@ -50,7 +50,7 @@ export default class RootPage extends React.Component {
             return (<RegisterLoginPage updateData={this.updateData}/>);
         }
         else if(this.state.dataOfAsync == "home" || this.state.dataOfAsync == "subjects") {
-            return (<ListsPage updateData={this.updateData} />);
+            return (<ListsPage updateData={this.updateData} navigation={this.props.navigation}/>);
         }
         else {
             return <View />;

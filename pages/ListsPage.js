@@ -9,6 +9,8 @@ import AsyncStorage from '@react-native-community/async-storage';
 const STORAGE_KEY = "save_state";
 export default class ListsPage extends React.Component {
 
+    
+
     constructor(props) {
         super(props);
         // props = {
@@ -41,7 +43,7 @@ export default class ListsPage extends React.Component {
     render() {
         // console.log(this.state.storageData +  " render 2");
         if(this.state.storageData  == "subjects") {
-            return (<ListOfSubjects updateDataLists={this.updateDataLists}/>);
+            return (<ListOfSubjects updateDataLists={this.updateDataLists} navigation={this.props.navigation}/>);
 
         }
         else if(this.state.storageData == "home") {

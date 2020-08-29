@@ -4,6 +4,9 @@ import AsyncStorage from '@react-native-community/async-storage';
 import DialogInput from 'react-native-dialog-input';
 import { FlatList } from 'react-native-gesture-handler';
 import Swipeout from 'react-native-swipeout';
+import { FAB } from 'react-native-paper';
+
+
 
 const STORAGE_KEY = "save_state";
 
@@ -21,12 +24,16 @@ export default class ListOfSubjects extends React.Component {
             dataHandler: [],
             showButton: false,
             userpassword: "",
-            useremail: ""
+            useremail: "",
+            isEmptyTask: false,
+            item: "",
+            tasks: "",
         };
+        this.getTasks = this.getTasks.bind(this);
     }
 
 
-    async componentDidMount() {
+    async UNSAFE_componentWillMount() {
         var name = await AsyncStorage.getItem(GROUP_NAME_KEY);
         var userpassword = await AsyncStorage.getItem(USER_PASSWORD_KEY);
         var useremail = await AsyncStorage.getItem(USER_EMAIL_KEY);
@@ -40,9 +47,12 @@ export default class ListOfSubjects extends React.Component {
         console.log(this.state.userpassword + ' ' + this.state.useremail + ' ' + this.state.nameOfGroup);
 
         console.log(this.state.dataHandler.length + " subjects in DID");
-        this.employeeFunc();        
 
         this.getFlatList();
+        this.employeeFunc();        
+
+        
+
         
         console.log("componentDidMount");
         
@@ -74,16 +84,17 @@ export default class ListOfSubjects extends React.Component {
                 return response.json();
             })
             .then((responseJson) => {
-                console.log(responseJson + " subjects");
+                console.log(responseJson);
                 if(this.state.employee == "viewer") {
                     this.setState({
                         dataHandler: responseJson
                     });
-                } else if((this.state.employee == "maker") && (responseJson.length > 0)) {
+                } else if((this.state.employee == "maker") && (responseJson != null)) {
                     this.setState({
                         dataHandler: responseJson
                     });
                 }
+                console.log(this.state.dataHandler);
             }).catch(err => console.log(err));
         } catch (error) {
             console.log(error);
@@ -140,6 +151,8 @@ export default class ListOfSubjects extends React.Component {
     sendInput = async () => {
         const { dataHandler } = this.state;
         const { nameOfGroup } = this.state;
+
+        console.log(dataHandler + " hello ");
         try {
             await fetch('http://192.168.0.111:80/homework/writeSubjects/jsonWriteSubjects.php', {
                 method: 'POST',
@@ -180,25 +193,126 @@ export default class ListOfSubjects extends React.Component {
         }
     }
 
-    generateKey = (numberOfCharachter) => {
-        return require('random-string')({length: numberOfCharachter});
+
+    onSwipeOpen = (item) => {
+        this.setState({
+            item: item
+        });
     }
 
-    deleteItemId = (id) => {
-        const filtredData = this.state.dataHandler.filter(item => item.id !== id);
-        this.setState({
-            dataHandler: filtredData
-        })
+    onSwipeClose = (item) => {
+        if(item == this.state.item) {
+            this.setState({item: ""});
+        }
     }
+
+
+
+
+    getTasks = async (subject) => {
+        const { nameOfGroup, useremail, userpassword } = this.state;
+        console.log(nameOfGroup + " " + useremail + " " + userpassword + " " + subject );
+        const { navigate } = this.props.navigation;
+        
+        
+        try {
+            await fetch('http://192.168.0.111:80/homework/getTasks/jsonGetTasks.php', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    'nameOfGroup': nameOfGroup,
+                    'useremail': useremail,
+                    'userpassword': userpassword,
+                    'nameOfSubject': subject,
+                    
+                })
+            })
+            .then(function (response) {
+                return response.json();
+            })
+            .then((responseJson) => {
+
+                console.log(responseJson);
+
+                if(responseJson == null && this.state.employee == "maker") {
+                    this.setState({isEmptyTask: true});
+                    navigate('Tasks', {subject: subject, isMaker: true, isEmptyTask: this.state.isEmptyTask});
+
+                } else if(responseJson != null && this.state.employee == "maker") {
+                    this.setState({isEmptyTask: false, tasks: responseJson});
+                    navigate('Tasks', {subject: subject, tasks: this.state.tasks, isMaker: true, isEmptyTask: this.state.isEmptyTask});
+
+                } else if(responseJson == null && this.state.employee == "viewer") {
+                    this.setState({isEmptyTask: true});
+                    navigate('Tasks', {subject: subject, isMaker: false, isEmptyTask: this.state.isEmptyTask});
+
+                } else if(responseJson != null && this.state.employee == "viewer") {
+                    this.setState({isEmptyTask: false, tasks: responseJson});
+                    navigate('Tasks', {subject: subject, tasks: this.state.tasks, isMaker: false, isEmptyTask: this.state.isEmptyTask});
+                }
+
+                console.log(this.state.tasks[0] + " subjects");
+
+
+            })
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+
     makerOrViewer = () => {
         console.log('employee ' + this.state.employee);
-
+ 
         var swipeoutBtns = [
             {
-              text: 'Button'
-            }
-          ]
+              component: (
+                <View style={styles.trashButton}>
+                        <Image style={{width: 25, height: 25, alignSelf: 'center'}} source={require('../images/download.png')} />
+                </View>
+              ),
+              backgroundColor: '#FF7171',
+              onPress: async () => { 
+                    const { nameOfGroup, userpassword, useremail, item } = this.state;   
+                    console.log(item + " Hello");
 
+            
+                    try {
+                        await fetch('http://192.168.0.111:80/homework/deleteSubject/jsonDeleteSubject.php', {
+                            method: 'POST',
+                            credentials: 'same-origin',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                'userpassword': userpassword,
+                                'useremail': useremail,
+                                'nameOfGroup': nameOfGroup,
+                                'nameOfSubject': item
+                            })
+                        })
+                        .then(function (response) {
+                            return response.json();
+                        })
+                        .then((responseJson) => {
+                            this.setState({
+                                dataHandler: responseJson
+                            });
+                        }).catch(err => console.log(err));
+                    } catch(error) {
+                        console.log(error);
+                    }
+               }
+
+            },
+        ];
+
+    
         switch(this.state.employee) {
             case "maker":
                 return (
@@ -212,27 +326,26 @@ export default class ListOfSubjects extends React.Component {
                         /> 
                         <FlatList
                             data={this.state.dataHandler}
-                            keyExtractor={item => this.generateKey(24)}
-                            renderItem={({ item }) => {
+                            keyExtractor={(item, index) => index.toString()}
+                            renderItem={({item, index}) => {
+                                // console.log(this.props.navigation);
                                 return (
-                                    <Swipeout right={swipeoutBtns} style={{backgroundColor: '#6495ED'}}>
-                                        <TouchableOpacity key={item} style={styles.flatListButton} >
+                                    // <View>
+                                    <Swipeout right={swipeoutBtns} onOpen={() => this.onSwipeOpen(item)} close={this.state.item !== item} onClose={() => this.onSwipeClose(item)} style={{backgroundColor: '#6495ED', marginTop: 13}}>
+                                        <TouchableOpacity style={styles.flatListButton} onPress={() => this.getTasks(item)}>
                                             <Text style={{fontSize: 24, color: "black"}}>{item}</Text>
                                         </TouchableOpacity>   
                                     </Swipeout>
-               
+                                    // </View>
                                 )
                             }}/>
-                        <View style={{flex: 1}}>
-                            <TouchableOpacity 
-                                style={styles.floatingButton}
-                                activeOpacity={0.7}
-                                onPress={() => this.setState({isVisible: true})}>
-                                    <Image
-                                        style={styles.floatImage}
-                                        source={require('../images/icons8-plus-40.png')}/>
-                            </TouchableOpacity>
-                        </View>
+                        <FAB 
+                            style={styles.fab}
+                            icon={require('../images/white.jpg')}
+                            color="white"
+                            onPress={() => this.setState({isVisible: true})}
+                        />
+                            
                        {this.showButton()}
                     </View>
                 );
@@ -241,12 +354,15 @@ export default class ListOfSubjects extends React.Component {
                     <View style={{flex: 1}}>
                         <FlatList
                             data={this.state.dataHandler}
-                            keyExtractor={item => this.generateKey(24)}
-                            renderItem={({ item }) => {
+                            keyExtractor={(item, index) => index.toString()}
+                            renderItem={({ item, index }) => {
                                 return (
-                                    <TouchableOpacity key={item} style={styles.flatListButton} >
-                                        <Text style={{fontSize: 24, color: "black"}}>{item}</Text>
-                                    </TouchableOpacity>
+                                    
+                                    <View style={{marginTop: 13}}>
+                                        <TouchableOpacity style={styles.flatListButton} onPress={() => this.getTasks(item)}>
+                                            <Text style={{fontSize: 24, color: "black"}}>{item}</Text>
+                                        </TouchableOpacity>
+                                    </View>
                                 )
                             }}/>
                     </View>  
@@ -291,6 +407,12 @@ const styles = StyleSheet.create({
         borderTopLeftRadius: 10,
         height: 50,
     },
+    trashButton: {
+        flex: 1,
+        resizeMode: 'cover',
+        justifyContent: 'center',
+        alignContent: 'center',
+    },
     flatListButton: {
         backgroundColor: "white",
         paddingLeft: 15,
@@ -298,23 +420,17 @@ const styles = StyleSheet.create({
         width: Dimensions.get('window').width - 10,
         height: 50,
         borderRadius: 10,
-        marginTop: 13,
+        // marginTop: 13,
         marginLeft: 5
     },
-    floatImage: {
-        resizeMode: 'contain',
-        width: 60,
-        height: 60,
-    },
-    floatingButton: {  
+    fab: {
         position: 'absolute',
-        width: 70,
-        height: 70,
-        // backgroundColor: 'black', 
-        alignItems: 'center',
+        margin: 16,
+        right: 0,
+        bottom: 0,
+        alignContent: 'center',
         justifyContent: 'center',
-        right: 15,
-        bottom: 10
+        backgroundColor: "#16FFEC"
     },
     upperThings: {
         height: 60,
