@@ -1,8 +1,9 @@
 import React from 'react';
 import ListOfGroups from './ListOfGroups';
 import ListOfSubjects from './ListOfSubjects';
-import RegisterLoginPage from './RegisterLoginPage';
+// import RegisterLoginPage from './RegisterLoginPage';
 import { View } from 'react-native';
+// import { FAB, ToggleButton, Appbar, RadioButton, Checkbox } from 'react-native-paper';
 import 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-community/async-storage';
 

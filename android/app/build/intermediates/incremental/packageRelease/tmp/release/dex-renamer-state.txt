@@ -1,0 +1,4 @@
+#Mon Sep 07 22:06:29 MSK 2020
+base.0=/home/roooy/Documents/OnlineHomework/android/app/build/intermediates/transforms/r8/release/0/classes.dex
+path.0=classes.dex
+renamed.0=classes.dex

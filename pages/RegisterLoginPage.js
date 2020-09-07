@@ -1,7 +1,12 @@
 import React from 'react';
-import { StyleSheet, TouchableOpacity, Text, View, Button, Alert } from 'react-native';
+import { StyleSheet, TouchableOpacity, Text, View, Image} from 'react-native';
 import { TextInput } from 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-community/async-storage';
+import AwesomeAlert from 'react-native-awesome-alerts';
+import { Icon, ThemeConsumer } from 'react-native-elements';
+import { FAB, ToggleButton, Appbar, RadioButton, Checkbox } from 'react-native-paper';
+
+import Dialog from 'react-native-dialog';
 
 
 const STORAGE_KEY = "save_state";
@@ -16,13 +21,18 @@ export default class App extends React.Component {
       password: "",
       newPassword: "",
       username: "",
+      isShowAlert: false,
+      message: "",
       changeState: "login",
+      isChangeIcon: true,
+      isChangeIconNew: true,
 
     };
     this.handleEmailText = this.handleEmailText.bind(this)
     this.handlePasswordText = this.handlePasswordText.bind(this);
     this.handleUsernameText = this.handleUsernameText.bind(this);
     this.handleNewPasswordText = this.handleNewPasswordText.bind(this);
+    this.showAlert = this.showAlert.bind(this);
     // this.userRegistration = this.userRegistration.bind(this);
     // this.getStorageData = this.getStorageData.bind(this);
   }
@@ -229,45 +239,47 @@ export default class App extends React.Component {
     const { email } = this.state;
     const { password } = this.state; 
 
-    
 
-    try {
-      await fetch('http://192.168.0.111:80/homework/login/jsonLogin.php', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          'email': email,
-          'password': password
-        })
-      }) 
-      .then(function (response) {
-          return response.json();
-        })
-        .then(async function (responseJson) {
+    if(email != "" && password != "") {
+      try {
+        await fetch('http://elroy.beget.tech/homework/login/jsonLogin.php', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            'email': email,
+            'password': password
+          })
+        }) 
+        .then(function (response) {
+            return response.json();
+          })
+          .then(async (responseJson) =>  {
 
-          await AsyncStorage.setItem(STORAGE_KEY, "home");
-          await AsyncStorage.setItem(USER_PASSWORD_KEY, password);
-          await AsyncStorage.setItem(USER_EMAIL_KEY, email);
+            // console.log(responseJson + "ResponseJson");
+            if(responseJson == "Вы успешно вошли!") {
+  
+              await AsyncStorage.setItem(STORAGE_KEY, "home");
+              await AsyncStorage.setItem(USER_PASSWORD_KEY, password);
+              await AsyncStorage.setItem(USER_EMAIL_KEY, email);
+              
+              // console.log('response: ', responseJson + ' login');
+  
+              updateData("home");
+  
+            } else {
+              this.showAlert(responseJson);
 
-          if(responseJson == "Вы успешно вошли!") {
-            Alert.alert('', responseJson);
-
-            console.log('response: ', responseJson + ' login');
-            updateData("home");
-          } else if(responseJson != "Нужно зарегистрироваться!") {
-            Alert.alert('', responseJson);
-
-          } else  {
-            Alert.alert('', responseJson);
-          }
-
-        }).catch(error => console.error(error));
-    } catch (err) {
-      console.error(err);
+            }
+          }).catch(error => console.error(error + " BAN"));
+      } catch (err) {
+        console.error(err);
+      }
+    } else {
+      this.showAlert("Пожалуйста заполните все пункты");
     }
 
   };
@@ -279,76 +291,114 @@ export default class App extends React.Component {
     const { password } = this.state; 
 
 
-    try {
-      await fetch('http://192.168.0.111:80/homework/registration/jsonRegistraion.php', {
-        // mode: 'cors',
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-          'Accept': 'application/json',
-          'Content-Type': 'application/json'
-        },
-        // credentials: 'include',
-        // redirect: 'follow',
-        body: JSON.stringify({
-          'username': username,
-          'email': email,
-          'password': password
-        })
-      })
-      .then(function (response) {
-          return response.json();
-        })
-        .then(function (responseJson) {
-          Alert.alert(responseJson);
-          console.log('response:', responseJson + ' register');
-        }).catch(error => console.error(error));
-
-    }
-    catch (err) {
-      console.error(err);
-    }
-  }
- 
-  userChangePassword = async () => {
-    const { email, password, newPassword } = this.state;
-
-    if(password == newPassword)
-    {
+    if(username != "" && email != "" && password != "") {
       try {
-        await fetch('http://192.168.0.111:80/homework/changePassword/jsonChangePassword.php', {
+        await fetch('http://elroy.beget.tech/homework/registration/jsonRegistration.php', {
+          // mode: 'cors',
           method: 'POST',
           credentials: 'same-origin',
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
           },
+          // credentials: 'include',
+          // redirect: 'follow',
           body: JSON.stringify({
+            'username': username,
             'email': email,
-            'password': password,
-          }),
+            'password': password
+          })
         })
         .then(function (response) {
-          return response.json();
-        })
-        .then((responseJson) => {
-          Alert.alert('', responseJson);
-          console.log(responseJson);
-        })
-      } catch (error) {
-        console.log(error);
+            return response.json();
+          })
+          .then((responseJson) =>  {
+            if(responseJson == null) {
+              // console.log(responseJson);
+            } else {
+              this.showAlert(responseJson);
+            }
+            // console.log('response:', responseJson + ' register');
+          }).catch(error => {});
+  
       }
+      catch (err) {
+        console.error(err);
+      }
+    } else {
+      this.showAlert("Пожалуйста, заполните все пункты");
     }
-    else 
-    {
-      Alert.alert('', "Пароли не совпадают");
+  }
+ 
+  userChangePassword = async () => {
+    const { email, password, newPassword } = this.state;
+
+    if(email != "" && password != "" && newPassword != "") {
+      if(password == newPassword)
+      {
+        try {
+          await fetch('http://elroy.beget.tech/homework/changePassword/jsonChangePassword.php', {
+            method: 'POST',
+            credentials: 'same-origin',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              'email': email,
+              'password': password,
+            }),
+          })
+          .then(function (response) {
+            return response.json();
+          })
+          .then((responseJson) => {
+            this.showAlert(responseJson);
+            // console.log(responseJson);
+          }).catch(err => {});
+        } catch (error) {
+          // console.log(error);
+        }
+      }
+      else 
+      {
+        this.showAlert("Пароли не совпадают");
+      }
+    } else {
+      this.showAlert("Пожалуйста заполните все пункты");
     }
   }
 
+  showAlert(message) {
+    this.setState({isShowAlert: true, message: message});
+ 
+  }
+
+  hideAlert = () => {
+    this.setState({isShowAlert: false});
+  }
+
+  renderItem = () => (
+    <View style={{width: 230, height: 110, /* backgroundColor: 'black' */ }}>
+      <Text style={{fontSize: 23, color: 'black', marginTop: 20, textAlign: 'center'}}>{this.state.message}</Text>
+      <View style={{position: 'absolute', alignSelf: 'center', bottom: 0}}>
+        <TouchableOpacity style={{ width: 65, height: 30, backgroundColor: '#ff033e', borderRadius: 4}} onPress={this.hideAlert}>
+          <Text style={{fontSize: 20, textAlign: 'center', color: 'white'}}>Окей</Text>
+        </TouchableOpacity>
+      </View>
+    </View> 
+  )
+
   render() {
-    // const { navigate } = this.props.navigation;
+    // console.log(this.state.message);
+    console.disableYellowBox = true;
+    const { message } = this.state;
     return (
       <View style={styles.container}>
+        <Dialog.Container visible={this.state.isShowAlert} contentStyle={{borderRadius: 5}}>
+          <Dialog.Title style={{fontSize: 25, textAlign: 'center', color: '#1aa800', marginBottom: 5}}>{message}</Dialog.Title>
+          <Dialog.Button style={styles.dialogOkButton} label="Окей" onPress={() => this.hideAlert()}/>
+        </Dialog.Container>
         <View style={((this.state.changeState == "login") ? styles.loginContainer: 
               (this.state.changeState == "register" ? styles.registerContainer: 
                 styles.forgotContainer))}>
@@ -364,27 +414,67 @@ export default class App extends React.Component {
             {this.emailRegister()}
             {(this.state.changeState == "forgotPass") ? 
                 (<View>
+                    <View style={styles.passwordContainer}>
+                      <TextInput 
+                        style={styles.userInputPass}
+                        placeholder="Новый пароль"
+                        secureTextEntry={this.state.isChangeIcon ? true: false}
+                        defaultValue={this.state.value}
+                        onChangeText={this.handlePasswordText}
+                        placeholderTextColor="grey"/>
+                      <TouchableOpacity onPress={() => {this.state.isChangeIcon ? this.setState({isChangeIcon: false}): this.setState({isChangeIcon: true})}} >
+                        <Image 
+                          source={this.state.isChangeIcon ? require("../images/show-512.png"): require("../images/hide-512.png")}
+                          style={{
+                            width: 30,
+                            tintColor: '#2e56ff',
+                            height: 30, 
+                            marginTop: 10,
+                            marginLeft: 5}}
+                        />
+                       </TouchableOpacity>
+                    </View>
+                    <View style={styles.passwordContainer}>
+                      <TextInput 
+                        style={styles.userInputPass}
+                        placeholder="Новый пароль"
+                        secureTextEntry={this.state.isChangeIconNew ? true: false}
+                        defaultValue={this.state.value}
+                        onChangeText={this.handleNewPasswordText}
+                        placeholderTextColor="grey"/>
+                      <TouchableOpacity onPress={() => {this.state.isChangeIconNew ? this.setState({isChangeIconNew: false}): this.setState({isChangeIconNew: true})}} >
+                        <Image 
+                          source={this.state.isChangeIconNew ? require("../images/show-512.png"): require("../images/hide-512.png")}
+                          style={{
+                            width: 30,
+                            tintColor: '#2e56ff',
+                            height: 30, 
+                            marginTop: 10,
+                            marginLeft: 5}}
+                        />
+                       </TouchableOpacity>
+                    </View>    
+                  </View>):      
+                (<View style={styles.passwordContainer}>
                   <TextInput 
-                    style={styles.userInput}
-                    placeholder="Новый пароль"
+                    style={styles.userInputPass}
+                    placeholder="Пароль"
+                    secureTextEntry={this.state.isChangeIcon ? true: false}
                     defaultValue={this.state.value}
                     onChangeText={this.handlePasswordText}
                     placeholderTextColor="grey"/>
-                  <TextInput 
-                    style={styles.userInput}
-                    placeholder="Новый пароль"
-                    defaultValue={this.state.value}
-                    onChangeText={this.handleNewPasswordText}
-                    placeholderTextColor="grey"/>
-                  </View>):
-
-                  
-                (<TextInput
-                  style={styles.userInput}
-                  placeholder="Пароль"
-                  defaultValue={this.state.value}
-                  onChangeText={this.handlePasswordText}
-                  placeholderTextColor="grey"/>)
+                  <TouchableOpacity onPress={() => {this.state.isChangeIcon ? this.setState({isChangeIcon: false}): this.setState({isChangeIcon: true})}} >
+                    <Image 
+                      source={this.state.isChangeIcon ? require("../images/show-512.png"): require("../images/hide-512.png")}
+                      style={{
+                        width: 30,
+                        tintColor: '#2e56ff',
+                        height: 30, 
+                        marginTop: 10,
+                        marginLeft: 5}}
+                    />
+                    </TouchableOpacity>
+                  </View>)
             }
           </View>
           {this.changeButtonRegPass()}
@@ -404,6 +494,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  dialogOkButton: {
+    // backgroundColor: "#1aa800",
+    color: "#1aa800",
+    marginRight: 10
+  },
+  dialogButtonSubmit: {
+    backgroundColor: "#1aa800",
+    color: "white",
+    marginRight: 10,
+    width: 70,
+    fontSize: 16,
+    // fontSize: 17,
+    // height: 40
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    // justifyContent: 'center',
+    // alignItems: 'center',
+
   },
   forgotContainer: {
     backgroundColor: "white",
@@ -447,6 +557,15 @@ const styles = StyleSheet.create({
   },
   userInput: {
     width: 250,
+    height: 50,
+    fontSize: 16,
+    backgroundColor: "#F8F8F8",
+    padding: 10,
+    marginBottom: 15,
+  },
+  userInputPass: {
+    width: 225,
+    marginLeft: 10,
     height: 50,
     fontSize: 16,
     backgroundColor: "#F8F8F8",

@@ -1,10 +1,9 @@
 import React from 'react';
-import { View, TextInput, StyleSheet, TouchableOpacity, Text, Dimensions, Image, Alert, SafeAreaView, ScrollView, Platform } from 'react-native';
+import { View, TextInput, StyleSheet, TouchableOpacity, Text, Dimensions, Image, Alert, SafeAreaView, ScrollView, Platform} from 'react-native';
 import AsyncStorage from '@react-native-community/async-storage';
 import { FAB } from 'react-native-paper';
-import ImagePicker from 'react-native-image-picker';
-import base64 from 'react-native-base64';
-import RNFetchBlob from 'rn-fetch-blob';
+import Dialog from 'react-native-dialog';
+
 
 const GROUP_NAME_KEY = "save_group";
 
@@ -22,6 +21,8 @@ export default class Tasks extends React.Component {
         super(props);
         this.state = {
             task: "",
+            isShowAlert: false,
+            message: "",
             screenHeight: 0,
             taskGet: "",
             showButton: false,
@@ -42,7 +43,7 @@ export default class Tasks extends React.Component {
         this.props.navigation.pop();
     }
 
-    async componentDidMount() {
+    async UNSAFE_componentWillMount() {
         var name = await AsyncStorage.getItem(GROUP_NAME_KEY);
         var useremail = await AsyncStorage.getItem(USER_EMAIL_KEY);
         var userpassword = await AsyncStorage.getItem(USER_PASSWORD_KEY);
@@ -56,8 +57,6 @@ export default class Tasks extends React.Component {
         });
 
     }
-
-
     
     handleNameText(value) {
         this.setState({
@@ -68,12 +67,12 @@ export default class Tasks extends React.Component {
 
     sendInput = async () => {
         const { nameOfGroup, task, photo } = this.state;
-        console.log(task + " task in sendInput()");
+        // console.log(task + " task in sendInput()");
 
 
         const { subject } = this.props.navigation.state.params;
         try {
-            await fetch('http://192.168.0.111:80/homework/writeTasks/jsonWriteTasks.php', {
+            await fetch('http://elroy.beget.tech/homework/writeTasks/jsonWriteTasks.php', {
                 method: 'POST',
                 credentials: 'same-origin',
                 headers: {
@@ -91,11 +90,12 @@ export default class Tasks extends React.Component {
                 return response.json();
             }))
             .then((responseJson) => {
-                console.log(responseJson);
-                Alert.alert('', responseJson);
-            }).catch(err => console.log(err));
+                // console.log(responseJson);
+                this.setState({showButton: false});
+                this.showAlert(responseJson);
+            }).catch(err => {});
         } catch (error) {
-            console.log(error);
+            // console.log(error);
         }
 
         
@@ -156,15 +156,15 @@ export default class Tasks extends React.Component {
         const { tasks } = this.props.navigation.state.params;
         // const { photo } = this.state;
 
-        console.log(this.state.isEmptyTask + " inShowTask");
+        // console.log(this.state.isEmptyTask + " inShowTask");
 
         // console.log(tasks[1] + " tasks[1] in showTasks");
 
         switch(this.state.isEmptyTask) {
             case true: 
                 return (
-                    <View style={{flex: 1, alignItems: 'center'}}> 
-                        <Text style={{justifyContent: 'center', alignSelf: 'center', fontSize: 24}}>Домашнее задание ещё не выложено</Text>
+                    <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}> 
+                        <Text style={{marginBottom: 15, textAlign: 'center', fontSize: 30, color: 'white'}}>Домашнее задание ещё не выложено</Text>
                     </View>
                 );
             case false: 
@@ -192,6 +192,16 @@ export default class Tasks extends React.Component {
         }
     }
 
+    showAlert = (message) => {
+        this.setState({isShowAlert: true, message: message});
+        // console.log(message); 
+    }
+
+    hideAlert = () => {
+        this.setState({isShowAlert: false});
+    }
+
+
     writeOrShowTask = () => {
         const { tasks } = this.props.navigation.state.params;
         // const { photo } = this.state;
@@ -206,7 +216,7 @@ export default class Tasks extends React.Component {
                             }}>
                             <TextInput 
                                     underlineColorAndroid="transparent"
-                                    placeholder="Задание"
+                                    placeholder="Задание?"
                                     // defaultValue={this.state.value}
                                     onChangeText={this.handleNameText}
                                     multiline={true}
@@ -283,10 +293,17 @@ export default class Tasks extends React.Component {
 
 
     makeOrViewer = () => {
+        const { message } = this.state;
         switch(this.props.navigation.state.params.isMaker) {
             case true:
                 return (
                     <View style={{flex: 1}}>
+                        <Dialog.Container contentStyle={{borderRadius: 10}} visible={this.state.isShowAlert}>
+                            <Dialog.Title style={{fontSize: 23, textAlign: 'center', marginBottom: 5, color: '#1aa800'}}>{message}</Dialog.Title>
+                            {/* <View style={{flexDirection: 'row-reverse'}}> */}
+                            <Dialog.Button style={styles.dialogOkButton} label="Окей" onPress={() => this.hideAlert()}/>
+                            {/* </View> */}
+                        </Dialog.Container>
                         {this.writeOrShowTask()}
                         {this.showButton()}
                     </View>
@@ -302,6 +319,8 @@ export default class Tasks extends React.Component {
     }
 
     render() {
+        console.disableYellowBox = true;
+
         return (
             <View style={styles.taskPage}>
                 <View style={styles.upperThings}>
@@ -321,7 +340,12 @@ export default class Tasks extends React.Component {
 const styles = StyleSheet.create({
     taskPage: {
         flex: 1,
-        backgroundColor: '#6495ED'
+        backgroundColor: '#6199ff'
+    },
+    dialogOkButton: {
+        // backgroundColor: "#1aa800",
+        color: "#1aa800",
+        marginRight: 10
     },
     userText: {
         marginLeft: 10, 
@@ -366,7 +390,7 @@ const styles = StyleSheet.create({
     },
     changeText: {
         marginBottom: 5,
-        fontSize: 40,
+        fontSize: 35,
         // fontFamily: '',
         color: "#4169E1",
         marginLeft: 20

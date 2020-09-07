@@ -1,10 +1,11 @@
 import React from 'react';
 import ListOfGroups from './ListOfGroups';
 import RegisterLoginPage from './RegisterLoginPage';
-import { View } from 'react-native';
+import {View} from 'react-native';
 import 'react-native-gesture-handler';
 import AsyncStorage from '@react-native-community/async-storage';
 import ListsPage from './ListsPage';
+
 
 
 const STORAGE_KEY = "save_state";
@@ -45,6 +46,7 @@ export default class RootPage extends React.Component {
     
     
     render() {
+        console.disableYellowBox = true;
         // console.log(this.state.dataOfAsync + " render");
         if(this.state.dataOfAsync == "login" || this.state.dataOfAsync == null) {
             return (<RegisterLoginPage updateData={this.updateData}/>);
